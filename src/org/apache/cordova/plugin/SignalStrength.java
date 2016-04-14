@@ -12,45 +12,85 @@ import org.json.JSONObject;
 
 public class SignalStrength extends CordovaPlugin {
 
-@Override
-public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+        SignalStrengthStateListener ssListener;
+        int dbm = -1;
 
-        if (action.equals("dbm")) {
-                ssListener = new SignalStrengthStateListener();
-                TelephonyManager tm = (TelephonyManager) cordova.getActivity().getSystemService(Context.TELEPHONY_SERVICE);
-                tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+        int snr = -1;
+        int cdmaDbm = -1;
+        int cdmaEcio =-1;
+
+        @Override
+        public boolean execute(String action, JSONArray args, CallbackContext callbackContext) throws JSONException {
+
+                if ("snr".equals(action) || "dbm".equals(action) || "cdmDbm".equals(action) || "cdmaDbm".equals(action) || "cdmaEcio".equals(action)) {
+                        ssListener = new SignalStrengthStateListener();
+                        TelephonyManager tm = (TelephonyManager) cordova.getActivity().getSystemService(Context.TELEPHONY_SERVICE);
+                        tm.listen(ssListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+
+                        if (action.equals("dbm")) {
+                                sleep(dbm);
+                                callbackContext.success(dbm);
+                                return true;
+                        }
+                        else if ("snr".equals(action)) {
+                                sleep(snr);
+                                callbackContext.success(snr);
+                                return true;
+                        }
+                        else if ("cdmaDbm".equals(action)) {
+                                sleep(cdmaDbm);
+                                callbackContext.success(cdmaDbm);
+                                return true;
+                        }
+                        else if ("cdmaEcio".equals(action)) {
+                                sleep(cdmaEcio);
+                                callbackContext.success(cdmaEcio);
+                                return true;
+                        }
+
+                }
+
+                return false;
+        }
+
+        private void sleep(int value) {
                 int counter = 0;
-                while ( dbm == -1) {
+                while ( value == -1) {
                         try {
                                 Thread.sleep(200);
                         } catch (InterruptedException e) {
                                 e.printStackTrace();
                         }
-                        if (counter++ >= 5)
-                        {
+                        if (counter++ >= 5) {
                                 break;
                         }
                 }
-                callbackContext.success(dbm);
-                return true;
         }
 
-        return false;
-}
 
+        class SignalStrengthStateListener extends PhoneStateListener {
 
-class SignalStrengthStateListener extends PhoneStateListener {
+                @Override
+                public void onSignalStrengthsChanged(android.telephony.SignalStrength signalStrength) {
+                        super.onSignalStrengthsChanged(signalStrength);
 
-@Override
-public void onSignalStrengthsChanged(android.telephony.SignalStrength signalStrength) {
-        super.onSignalStrengthsChanged(signalStrength);
-        int tsNormSignalStrength = signalStrength.getGsmSignalStrength();
-        dbm = (2 * tsNormSignalStrength) - 113;     // -> dBm
-}
+                        if (signalStrength.isGsm()) {
 
-}
+                            if (signalStrength.getGsmSignalStrength() != 99)
+                                dbm = signalStrength.getGsmSignalStrength() * 2 - 113;
+                            else {
+                                dbm = signalStrength.getGsmSignalStrength();
+                            }
+                        } 
+                        else {
+                            snr = signalStrength.getEvdoSnr();
+                            cdmaDbm = signalStrength.getCdmaDbm();
+                            cdmaEcio = signalStrength.getCdmaEcio();
+                        }
 
-SignalStrengthStateListener ssListener;
-int dbm = -1;
+                }
+
+        }
+
 
 }
