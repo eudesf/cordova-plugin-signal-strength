@@ -74,8 +74,15 @@ public class SignalStrength extends CordovaPlugin {
                 public void onSignalStrengthsChanged(android.telephony.SignalStrength signalStrength) {
                         super.onSignalStrengthsChanged(signalStrength);
 
-                        if (signalStrength.isGsm()) {
-
+                        TelephonyManager tm = (TelephonyManager) cordova.getActivity().getSystemService(Context.TELEPHONY_SERVICE);
+                        // based on https://stackoverflow.com/questions/5545026/how-to-get-lte-signal-strength-in-android
+                        if (tm.getNetworkType() == TelephonyManager.NETWORK_TYPE_LTE) {
+                          try {
+                              dbm = Integer.parseInt(signalStrength.toString().split(" ")[8]) - 140;
+                          } catch (Exception ex) {
+                              dbm = 99;
+                          }
+                        } else if (signalStrength.isGsm()) {
                             if (signalStrength.getGsmSignalStrength() != 99)
                                 dbm = signalStrength.getGsmSignalStrength() * 2 - 113;
                             else {
