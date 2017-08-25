@@ -2,6 +2,7 @@ package org.apache.cordova.plugin;
 
 import android.content.Context;
 
+import java.lang.reflect.Method;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import org.apache.cordova.CordovaPlugin;
@@ -78,9 +79,18 @@ public class SignalStrength extends CordovaPlugin {
                         // based on https://stackoverflow.com/questions/5545026/how-to-get-lte-signal-strength-in-android
                         if (tm.getNetworkType() == TelephonyManager.NETWORK_TYPE_LTE) {
                           try {
-                              dbm = Integer.parseInt(signalStrength.toString().split(" ")[8]) - 140;
+                              for (Method method : android.telephony.SignalStrength.class.getMethods()) {
+                                  if (method.getName().equals("getLteSignalStrength")) {
+                                      dbm = ((Integer) method.invoke(signalStrength)) - 140;
+                                      break;
+                                  }
+                              }
                           } catch (Exception ex) {
-                              dbm = 99;
+                              try {
+                                  dbm = Integer.parseInt(signalStrength.toString().split(" ")[8]) - 140;
+                              } catch (Exception ex2) {
+                                  dbm = 99;
+                              }
                           }
                         } else if (signalStrength.isGsm()) {
                             if (signalStrength.getGsmSignalStrength() != 99)
